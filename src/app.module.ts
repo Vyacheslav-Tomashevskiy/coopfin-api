@@ -3,6 +3,7 @@ import { ConfigModule } from "@nestjs/config";
 import { ScheduleModule } from "@nestjs/schedule";
 import { BullModule } from "@nestjs/bullmq";
 import { redisConnectionFromEnv } from "./modules/notifications/reminder.queue";
+import { AuthModule } from "./modules/auth/auth.module";
 import { GroupsModule } from "./modules/groups/groups.module";
 import { MembersModule } from "./modules/members/members.module";
 import { LoansModule } from "./modules/loans/loans.module";
@@ -17,6 +18,7 @@ import { StellarIndexerService } from "./common/stellar-indexer.service";
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     BullModule.forRoot({ connection: redisConnectionFromEnv() }),
+    AuthModule,
     GroupsModule,
     MembersModule,
     LoansModule,
