@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Param, Body } from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
+import { Controller, Get, Post, Param, Body, UseGuards } from "@nestjs/common";
+import { ApiTags, ApiBearerAuth } from "@nestjs/swagger";
 import { MembersService } from "./members.service";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
 @ApiTags("members")
 @Controller("groups/:groupId/members")
@@ -13,6 +14,8 @@ export class MembersController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   add(
     @Param("groupId") groupId: string,
     @Body("address") address: string,
