@@ -1,13 +1,11 @@
 import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
-import { ConfigService } from "@nestjs/config";
 
-export interface JwtPayload {
+export type JwtPayload = {
   sub: string;
-  address: string;
-  iat: number;
-}
+};
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -15,16 +13,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: config.get("JWT_SECRET", "coopfin-jwt-secret-dev"),
+      secretOrKey: config.get<string>("JWT_SECRET", "change-me-in-production"),
     });
   }
 
-  validate(payload: JwtPayload): JwtPayload {
-    // Passport attaches the return value to `request.user`
-    return {
-      sub: payload.sub,
-      address: payload.address,
-      iat: payload.iat,
-    };
+  validate(payload: JwtPayload) {
+    return { address: payload.sub };
   }
 }

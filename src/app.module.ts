@@ -10,7 +10,6 @@ import { NotificationsModule } from "./modules/notifications/notifications.modul
 import { PrismaService } from "./common/prisma.service";
 import { StellarService } from "./common/stellar.service";
 import { StellarIndexerService } from "./common/stellar-indexer.service";
-
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
