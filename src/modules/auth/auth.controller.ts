@@ -1,33 +1,23 @@
-import { Controller, Get, Post, Body, Query, UnauthorizedException, BadRequestException } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { AuthService } from './auth.service';
+import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import { ApiOperation, ApiQuery, ApiTags } from "@nestjs/swagger";
+import { AuthService } from "./auth.service";
+import { VerifyDto } from "./dto/verify.dto";
 
-class VerifyDto {
-  address: string;
-  signedNonce: string;
-}
-
-@ApiTags('auth')
-@Controller('api/auth')
+@ApiTags("auth")
+@Controller("auth")
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Get('nonce')
-  @ApiOperation({ summary: 'Get a random nonce for signing' })
-  getNonce(@Query('address') address: string) {
-    if (!address) {
-      throw new BadRequestException('Address is required');
-    }
-    const nonce = this.authService.generateNonce(address);
-    return { nonce };
+  @Get("nonce")
+  @ApiOperation({ summary: "Get a nonce to sign with a Stellar private key" })
+  @ApiQuery({ name: "address", required: true, description: "Stellar public key (G...)" })
+  getNonce(@Query("address") address: string) {
+    return this.authService.getNonce(address);
   }
 
-  @Post('verify')
-  @ApiOperation({ summary: 'Verify signature and issue JWT' })
-  verify(@Body() body: VerifyDto) {
-    if (!body.address || !body.signedNonce) {
-      throw new BadRequestException('Address and signedNonce are required');
-    }
-    return this.authService.verifySignature(body.address, body.signedNonce);
+  @Post("verify")
+  @ApiOperation({ summary: "Verify signed nonce and receive a JWT" })
+  verify(@Body() dto: VerifyDto) {
+    return this.authService.verify(dto.address, dto.signedNonce);
   }
 }
