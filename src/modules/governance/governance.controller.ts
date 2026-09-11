@@ -1,6 +1,7 @@
-import { Controller, Get, Post, Param, Body, Query } from "@nestjs/common";
-import { ApiTags, ApiOperation } from "@nestjs/swagger";
+import { Controller, Get, Post, Param, Body, Query, UseGuards } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { GovernanceService, CreateProposalDto } from "./governance.service";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
 @ApiTags("governance")
 @Controller("governance")
@@ -19,6 +20,8 @@ export class GovernanceController {
   }
 
   @Post("proposals")
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: "Register proposal after on-chain creation" })
   create(@Body() dto: CreateProposalDto) {
     return this.governanceService.create(dto);

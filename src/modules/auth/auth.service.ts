@@ -1,45 +1,61 @@
-import { Injectable, Logger } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { Keypair } from "@stellar/stellar-sdk";
+import { randomBytes } from "crypto";
 
-const NONCE_STORE = new Map<string, { nonce: string; expiresAt: number }>();
+type NonceEntry = {
+  nonce: string;
+  expiresAt: number;
+};
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
+  private readonly nonces = new Map<string, NonceEntry>();
+  private readonly ttlMs = 5 * 60 * 1000;
 
-  constructor(private jwtService: JwtService) {}
+  constructor(private readonly jwtService: JwtService) {}
 
-  async generateNonce(address: string) {
-    const nonce = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const expiresAt = Date.now() + 5 * 60 * 1000;
-    NONCE_STORE.set(address.toLowerCase(), { nonce, expiresAt });
+  getNonce(address: string): { nonce: string } {
+    this.assertValidAddress(address);
+    const nonce = randomBytes(32).toString("hex");
+    this.nonces.set(address, { nonce, expiresAt: Date.now() + this.ttlMs });
     return { nonce };
   }
 
-  async verifySignature(address: string, signedNonce: string) {
-    const stored = NONCE_STORE.get(address.toLowerCase());
-    if (!stored) throw new Error("Nonce not found or expired");
+  verify(address: string, signedNonce: string): { accessToken: string } {
+    this.assertValidAddress(address);
 
-    if (Date.now() > stored.expiresAt) {
-      NONCE_STORE.delete(address.toLowerCase());
-      throw new Error("Nonce expired");
+    const entry = this.nonces.get(address);
+    if (!entry || Date.now() > entry.expiresAt) {
+      throw new UnauthorizedException("Nonce expired or not found");
     }
 
-    let signatureBuffer: Buffer;
+    let signature: Buffer;
     try {
-      signatureBuffer = Buffer.from(signedNonce, "base64");
+      signature = Buffer.from(signedNonce, "base64");
     } catch {
-      signatureBuffer = Buffer.from(signedNonce, "hex");
+      throw new BadRequestException("Invalid signedNonce encoding");
     }
 
     const keypair = Keypair.fromPublicKey(address);
-    const valid = keypair.verify(Buffer.from(stored.nonce), signatureBuffer);
-    if (!valid) throw new Error("Invalid signature");
+    const message = Buffer.from(entry.nonce);
+    if (!keypair.verify(message, signature)) {
+      throw new UnauthorizedException("Invalid signature");
+    }
 
-    NONCE_STORE.delete(address.toLowerCase());
+    this.nonces.delete(address);
+    return { accessToken: this.jwtService.sign({ sub: address }) };
+  }
 
-    const token = this.jwtService.sign({ address: address.toLowerCase() });
-    return { access_token: token };
+  private assertValidAddress(address: string): void {
+    try {
+      Keypair.fromPublicKey(address);
+    } catch {
+      throw new BadRequestException("Invalid Stellar address");
+    }
   }
 }

@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from "@nestjs/swagger";
-import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { LoansService, CreateLoanDto } from "./loans.service";
+import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 
 @ApiTags("loans")
 @Controller("loans")
